@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>高科技合约复利计算系统</title>
+    <style>
+        /* 高科技暗黑发光主题 */
+        body {
+            background-color: #0b0f19;
+            color: #00ffff;
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(11, 20, 35, 0.8);
+            border: 1px solid #0088ff;
+            box-shadow: 0 0 20px rgba(0, 136, 255, 0.4) inset, 0 0 10px rgba(0, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            letter-spacing: 2px;
+            border-bottom: 1px dashed #0088ff;
+            padding-bottom: 15px;
+        }
+        .control-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #88ccff;
+        }
+        input[type="number"], select {
+            background: #050a14;
+            border: 1px solid #0055aa;
+            color: #00ffff;
+            padding: 10px;
+            border-radius: 5px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        input[type="number"]:focus, select:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+        }
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            background: #050a14;
+            padding: 10px;
+            border: 1px solid #0055aa;
+            border-radius: 5px;
+        }
+        button.calc-btn {
+            grid-column: span 2;
+            background: linear-gradient(90deg, #0055aa, #0088ff);
+            color: #fff;
+            border: none;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            text-shadow: 0 0 5px #fff;
+            box-shadow: 0 0 15px rgba(0, 136, 255, 0.6);
+            transition: all 0.3s;
+        }
+        button.calc-btn:hover {
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.8);
+            transform: scale(1.01);
+        }
+        .summary {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 85, 170, 0.2);
+            border-left: 4px solid #00ffff;
+            font-size: 18px;
+        }
+        .summary span { font-weight: bold; color: #fff; text-shadow: 0 0 5px #0ff; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid rgba(0, 136, 255, 0.3);
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background: rgba(0, 136, 255, 0.2);
+            color: #00ffff;
+        }
+        tr:nth-child(even) { background: rgba(0, 85, 170, 0.1); }
+        tr:hover { background: rgba(0, 255, 255, 0.1); }
+        .highlight { color: #ff0055; font-weight: bold; text-shadow: 0 0 5px #ff0055; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 合约复利推演系统</h1>
+    
+    <div class="control-panel">
+        <div class="input-group">
+            <label>初始本金 (U)</label>
+            <input type="number" id="principal" value="1000" min="0" step="0.01">
+        </div>
+        
+        <div class="input-group">
+            <label>交易天数 (天)</label>
+            <input type="number" id="days" value="30" min="1">
+        </div>
+
+        <div class="input-group">
+            <label>收益设置方式</label>
+            <div class="radio-group">
+                <input type="radio" name="yieldType" id="yieldAmountMode" value="amount" checked onchange="toggleYieldInput()"> <label for="yieldAmountMode">按每日收益金额</label>
+                <input type="radio" name="yieldType" id="yieldRateMode" value="rate" onchange="toggleYieldInput()"> <label for="yieldRateMode">按固定收益率</label>
+            </div>
+        </div>
+
+        <div class="input-group" id="yieldAmountBox">
+            <label>每日实际收益金额 (第一天赚的金额，用于自动计算收益率)</label>
+            <input type="number" id="yieldAmount" value="30" min="0" step="0.01">
+        </div>
+
+        <div class="input-group" id="yieldRateBox" style="display: none;">
+            <label>每日收益率 (%)</label>
+            <input type="number" id="yieldRate" value="30" min="0" step="0.01">
+        </div>
+
+        <div class="input-group">
+            <label>提取周期 (每几天提取一次？填写 0 表示不提取)</label>
+            <input type="number" id="withdrawCycle" value="10" min="0">
+        </div>
+
+        <div class="input-group">
+            <label>提取方式与数值</label>
+            <div style="display:flex; gap:10px;">
+                <select id="withdrawType" style="flex:1;">
+                    <option value="percent">提取当日本金比例 (%)</option>
+                    <option value="amount">提取固定金额 (U)</option>
+                </select>
+                <input type="number" id="withdrawValue" value="10" min="0" step="0.01" style="flex:1;">
+            </div>
+        </div>
+
+        <button class="calc-btn" onclick="calculate()">执行数据演算</button>
+    </div>
+
+    <div class="summary" id="summaryBox" style="display: none;">
+        <div>期末总本金：<span id="finalPrincipal">0</span> U</div>
+        <div>累计总收益：<span id="totalProfit">0</span> U</div>
+        <div>累计总提取：<span id="totalWithdraw">0</span> U</div>
+    </div>
+
+    <table id="resultTable" style="display: none;">
+        <thead>
+            <tr>
+                <th>天数</th>
+                <th>当日本金 (U)</th>
+                <th>收益率 (%)</th>
+                <th>当日收益 (U)</th>
+                <th>提取金额 (U)</th>
+                <th>期末结余本金 (U)</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    // 切换收益率输入框
+    function toggleYieldInput() {
+        const isAmount = document.getElementById('yieldAmountMode').checked;
+        document.getElementById('yieldAmountBox').style.display = isAmount ? 'flex' : 'none';
+        document.getElementById('yieldRateBox').style.display = isAmount ? 'none' : 'flex';
+    }
+
+    // 核心计算逻辑
+    function calculate() {
+        // 获取表单数据
+        const initialPrincipal = parseFloat(document.getElementById('principal').value);
+        const days = parseInt(document.getElementById('days').value);
+        const isAmountMode = document.getElementById('yieldAmountMode').checked;
+        const withdrawCycle = parseInt(document.getElementById('withdrawCycle').value);
+        const withdrawType = document.getElementById('withdrawType').value;
+        const withdrawValue = parseFloat(document.getElementById('withdrawValue').value);
+
+        if (isNaN(initialPrincipal) || initialPrincipal <= 0) {
+            alert('请输入有效的初始本金');
+            return;
+        }
+
+        // 计算固定收益率
+        let dailyRate = 0;
+        if (isAmountMode) {
+            const yieldAmount = parseFloat(document.getElementById('yieldAmount').value);
+            dailyRate = yieldAmount / initialPrincipal; // 自动计算收益率
+        } else {
+            const yieldRate = parseFloat(document.getElementById('yieldRate').value);
+            dailyRate = yieldRate / 100;
+        }
+
+        let currentPrincipal = initialPrincipal;
+        let totalProfit = 0;
+        let totalWithdraw = 0;
+        
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = ''; // 清空表格
+
+        // 开始每日循环演算
+        for (let day = 1; day <= days; day++) {
+            // 当日收益
+            let dailyProfit = currentPrincipal * dailyRate;
+            totalProfit += dailyProfit;
+
+            // 处理提取逻辑
+            let withdrawAmount = 0;
+            let isWithdrawDay = false;
+            
+            if (withdrawCycle > 0 && day % withdrawCycle === 0) {
+                isWithdrawDay = true;
+                if (withdrawType === 'percent') {
+                    withdrawAmount = currentPrincipal * (withdrawValue / 100);
+                } else {
+                    withdrawAmount = withdrawValue;
+                }
+                // 防止提取金额超过当日本金+收益的总和
+                let maxAvailable = currentPrincipal + dailyProfit;
+                if (withdrawAmount > maxAvailable) {
+                    withdrawAmount = maxAvailable;
+                }
+                totalWithdraw += withdrawAmount;
+            }
+
+            // 期末结算：本金 + 收益 - 提取
+            let endPrincipal = currentPrincipal + dailyProfit - withdrawAmount;
+
+            // 渲染表格行
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>第 ${day} 天</td>
+                <td>${currentPrincipal.toFixed(2)}</td>
+                <td>${(dailyRate * 100).toFixed(2)}%</td>
+                <td style="color: #00ff88;">+${dailyProfit.toFixed(2)}</td>
+                <td class="${isWithdrawDay ? 'highlight' : ''}">${isWithdrawDay ? '-' + withdrawAmount.toFixed(2) : '--'}</td>
+                <td style="font-weight: bold; color: #fff;">${endPrincipal.toFixed(2)}</td>
+            `;
+            tbody.appendChild(tr);
+
+            // 将今日的期末本金结转为明天的初始本金
+            currentPrincipal = endPrincipal;
+        }
+
+        // 更新顶部数据总览
+        document.getElementById('finalPrincipal').innerText = currentPrincipal.toFixed(2);
+        document.getElementById('totalProfit').innerText = totalProfit.toFixed(2);
+        document.getElementById('totalWithdraw').innerText = totalWithdraw.toFixed(2);
+
+        // 显示结果区域
+        document.getElementById('summaryBox').style.display = 'flex';
+        document.getElementById('resultTable').style.display = 'table';
+    }
+</script>
+
+</body>
+</html>
